@@ -1,9 +1,10 @@
+# Tunable Directional Emission and Collective Dissipation with Quantum Metasurfaces
+Codes to reproduce the figures shown in the article: Tunable directional emission and collective dissipation with quantum metasurfaces.
+
 <p align="center">
   <img src="https://github.com/Davtax/Tunable-emission-metasurfaces/blob/main/img/schematic_system.png" width="350" title="system_schematic">
 </p>
 
-# Tunable Directional Emission and Collective Dissipation with Quantum Metasurfaces
-Codes to reproduce the figures shown in the article: Tunable directional emission and collective dissipation with quantum metasurfaces.
 
 ## Dependences
 
