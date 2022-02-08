@@ -1,4 +1,5 @@
 # Tunable Directional Emission and Collective Dissipation with Quantum Metasurfaces
+[![DOI](https://zenodo.org/badge/455221135.svg)](https://zenodo.org/badge/latestdoi/455221135)
 Codes to reproduce the figures shown in the article: Tunable directional emission and collective dissipation with quantum metasurfaces.
 
 <p align="center">
