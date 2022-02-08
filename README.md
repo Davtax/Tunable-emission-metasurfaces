@@ -14,4 +14,4 @@ pip install joblib
 ```
 
 ## Usage
-In `general_functions.py` contains the main functions. These functions are called from the different jupyter notebooks that reproduce the figures of the article (main text and supplemental material). Inside the folder [img](https://github.com/Davtax/Tunable-emission-metasurfaces/img) are located the pictures used in the notebooks to schematically describe the system.
+In [`general_functions.py`](https://github.com/Davtax/Tunable-emission-metasurfaces/general_functions.py)`general_functions.py` contains the main functions. These functions are called from the different jupyter notebooks that reproduce the figures of the article (main text and supplemental material). Inside the folder [img](https://github.com/Davtax/Tunable-emission-metasurfaces/img) are located the pictures used in the notebooks to schematically describe the system.
