@@ -10,7 +10,7 @@ Codes to reproduce the figures shown in the article: Tunable directional emissio
 
 ## Dependences
 
-This package needs the following packages:
+This repository depends on the following packages:
 
 ```bash
 pip install numpy
