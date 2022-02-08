@@ -6,10 +6,10 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 from tqdm.auto import tqdm
-import matplotlib
+
+counter_verify = 0  # Counter for the verification in complete_dynamics
 
 
-# TODO: Dimensions in array_like arguments, separated by a comma
 def g0_fun(k0, aho):
 	"""
 	Compute the renormalized fluctuation-averaged Green's tensor for r = 0. This corresponds to Eq. (23) of J. Perczel,
@@ -704,7 +704,7 @@ def compute_hamiltonian_real_space(r_lat, k0, pol_lat, pol_emi=None, r_emi=None,
 		If True, plot the dipoles in 2D. The array is plotted in blue, the emitters in red.
 
 	Returns
-	-------1
+	-------
 	Hamiltonian: array_like (N_tot + n_e, N_tot + n_e)
 		Non-Hermitian Hamiltonian for the system of N_tot dipoles in the array, and n_e emitters.
 	"""
@@ -1216,7 +1216,8 @@ def midpoint_circle(Nx, Ny, r):
 
 def complete_dynamics(r_pos, k0, pol_lat, dt, tf, psi0, N_x=None, N_y=None, emitter=None, pol_emi=None, gamma_emi=None,
                       omega_emi=None, border=None, decay_fun=quadratic, max_gamma=None, theta_max=None, r_circles=None,
-                      type_border=midpoint_circle, progress_bar=False, plot=False):
+                      type_border=midpoint_circle, progress_bar=False, plot=False, verify=False, limit_verify=1e-5,
+                      window=100, factor_increase=10, counter_max=100):
 	"""
 	Compute the complete dynamics for the system of an array and some emitters, in a given initial state. After the
 	dynamics is computed, the quality factor and the chirality are also computed.
@@ -1264,6 +1265,18 @@ def complete_dynamics(r_pos, k0, pol_lat, dt, tf, psi0, N_x=None, N_y=None, emit
 		Print the progress bar for the dynamics.
 	plot: bool, optional, default=False
 		Plot the array and the emitters.
+	verify: bool, optional, default=False
+		If True, verify that the numerical Purcell factor reaches a constant value. The function increase the time step
+		and the total time until the numerical final time derivative of the Purcell factor is lower than limit_verify.
+	limit_verify: float, optional, default=1e-5
+		Minimum value for the time derivative of the Purcell factor at the final time.
+	window: int, optional, default=100
+		All values of dQ_n[-window:] must be lower than limit_verify so the verification is passed.
+	factor_increase: float, optional, default=10
+		If the verification is not passed, then the time step and the final time are multiplied by the given factor.
+	counter_max: int, optional, default=100
+		Maximum iterations for the increase of the time step and total time. If the limit is not reached before, an
+		exception is sent.
 
 	Returns
 	-------
@@ -1288,6 +1301,7 @@ def complete_dynamics(r_pos, k0, pol_lat, dt, tf, psi0, N_x=None, N_y=None, emit
 			theta_max_value: array_like, (len(n_circles))
 				Origin of theta for the calculation of the chirality, for each circle.
 	"""
+	global counter_verify
 	if pol_emi is not None:
 		n_e = len(pol_emi)
 	else:
@@ -1303,6 +1317,20 @@ def complete_dynamics(r_pos, k0, pol_lat, dt, tf, psi0, N_x=None, N_y=None, emit
 		Q_n = quality_factor(Hamiltonian, indices_border[0], psi, time, n_e)
 	else:
 		Q_n = None
+
+	if Q_n is not None and verify:
+		counter_verify += 1
+		dQ_n = np.gradient(Q_n, dt)
+		if np.any(np.abs(dQ_n[-window:]) > limit_verify):
+			if counter_verify > counter_max:
+				counter_verify = 0  # Reset the counter
+				raise Exception('The maximum number of iterations for the verification has been reached.')
+			else:
+				return complete_dynamics(r_pos, k0, pol_lat, dt * factor_increase, tf * factor_increase, psi0, N_x, N_y,
+				                         emitter, pol_emi, gamma_emi, omega_emi, border, decay_fun, max_gamma,
+				                         theta_max, r_circles, type_border, progress_bar, plot, verify, limit_verify,
+				                         window, factor_increase, counter_max)
+		counter_verify = 0  # Reset the counter
 
 	if r_circles is None:
 		r_circles = np.arange(0, 5)
@@ -1791,3 +1819,39 @@ def compute_shift(r1, r2, pol1, pol2, k0, Gamma_q, psi0):
 	shift = (psi0.T.conj() @ H @ psi0)[0, 0]
 
 	return shift
+
+
+def generate_hexagon(n, a=1):
+	"""
+	Generate the (x, y) coordinates of a filled hexagon for a triangular lattice with interatomic distance 'a', sheen in
+	the momentum space.
+
+	Parameters
+	----------
+	n: int
+		Number of sites in each direction from the origin.
+	a: float, optional, default=1
+		Interatomic distance of the triangular lattice
+
+	Returns
+	-------
+	(x, y): array_like
+		Coordinates of thje sites in the hexagonal lattice.
+	"""
+	a1 = [a, 0]
+	a2 = [a / 2, a * np.sqrt(3) / 2]
+	x, y = [i.flatten() for i in lattice_sites(a1, a2, n, n)]
+	x *= 4 / 3 * np.pi / a / n
+	y *= 4 / 3 * np.pi / a / n
+
+	r = lambda x, sign: -np.sqrt(3) * x + 4 * np.pi / (np.sqrt(3) * a) * sign
+
+	mask_top = np.where(y < r(x, 1))
+	x = x[mask_top]
+	y = y[mask_top]
+
+	mask_top = np.where(y > r(x, -1))
+	x = x[mask_top]
+	y = y[mask_top]
+
+	return x, y
